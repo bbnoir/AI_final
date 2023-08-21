@@ -4,10 +4,6 @@ from thop import profile
 
 
 class SuperResolution(nn.Module):
-    '''
-        This is just an exmaple of a SR model, 
-        you can change everything except the model name "SuperResolution"
-    '''
     def __init__(self):
         super(SuperResolution, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, 3, 1, 1)
@@ -23,4 +19,3 @@ class SuperResolution(nn.Module):
         x = self.relu(self.conv3(x))
         x = self.PS(x)
         return x
-    
