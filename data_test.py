@@ -1,5 +1,5 @@
 from torch.utils.data import Dataset
-# import torchvision.transforms as T
+import torchvision.transforms as T
 import torch
 import os
 from glob import glob
@@ -11,27 +11,27 @@ from hypr import config
 
 
 def transform(HR_img, LR_img):
-    # crop_size = 128
+    crop_size = 256
     HR_img = np.transpose(HR_img if HR_img.shape[2] == 1 else HR_img[:, :, [
                           2, 1, 0]], (2, 0, 1))   # HWC-BGR to CHW-RGB
     LR_img = np.transpose(LR_img if LR_img.shape[2] == 1 else LR_img[:, :, [
                           2, 1, 0]], (2, 0, 1))   # HWC-BGR to CHW-RGB
     HR_img = torch.from_numpy(HR_img).float()
     LR_img = torch.from_numpy(LR_img).float()
-    # HR_tf = T.Compose(
-    #     [
-    #         T.CenterCrop(crop_size*3),
-    #         # T.RandomHorizontalFlip()
-    #     ]
-    # )
-    # LR_tf = T.Compose(
-    #     [
-    #         T.CenterCrop(crop_size),
-    #         # T.RandomHorizontalFlip()
-    #     ]
-    # )
-    # HR_img = HR_tf(HR_img)
-    # LR_img = LR_tf(LR_img)
+    HR_tf = T.Compose(
+        [
+            T.CenterCrop(crop_size*3),
+            # T.RandomHorizontalFlip()
+        ]
+    )
+    LR_tf = T.Compose(
+        [
+            T.CenterCrop(crop_size),
+            # T.RandomHorizontalFlip()
+        ]
+    )
+    HR_img = HR_tf(HR_img)
+    LR_img = LR_tf(LR_img)
     return HR_img, LR_img
 
 
@@ -60,9 +60,10 @@ class SR2k(Dataset):
     def __getitem__(self, idx):
         HR_name = self.HR_names[idx]
         HR_img = cv.imread(HR_name).astype(np.float32) / 255
+        HR_img = transform(HR_img)
         LR_name = self.LR_names[idx]
         LR_img = cv.imread(LR_name).astype(np.float32) / 255
-        HR_img, LR_img = transform(HR_img, LR_img)
+        LR_img = transform(LR_img)
         return {"LR": LR_img, "HR": HR_img}
 
 
@@ -75,7 +76,6 @@ def main():
     f, axarr = plt.subplots(1, 2)
     axarr[0].imshow(HR_img.permute(1, 2, 0))
     axarr[1].imshow(LR_img.permute(1, 2, 0))
-    # plt.savefig("plt.png")
     plt.show()
 
 

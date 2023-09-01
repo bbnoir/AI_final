@@ -1,7 +1,8 @@
 from hypr import config
 import torch
 import torch.nn as nn
-import torch.optim as optim
+# import torch.optim as optim
+import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from data import SR2k
 from model import SuperResolution
@@ -13,8 +14,10 @@ def main():
     # data
     train_ds = SR2k(config, set_type="train")
     val_ds = SR2k(config, set_type="val")
-    train_dl = DataLoader(train_ds, config["batch_size"], shuffle=True, drop_last=True)
-    val_dl = DataLoader(val_ds, config["batch_size"], shuffle=True, drop_last=True)
+    train_dl = DataLoader(
+        train_ds, config["batch_size"], shuffle=True, drop_last=True)
+    val_dl = DataLoader(
+        val_ds, config["batch_size"], shuffle=True, drop_last=True)
 
     device = config["device"]
 
@@ -23,11 +26,12 @@ def main():
     criterion = nn.MSELoss()
 
     n_epochs = config["epoch_num"]
-    optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
+    optimizer = torch.optim.Adam(
+        model.parameters(), lr=config["learning_rate"])
     # scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", factor=0.4, patience=1, verbose=True, min_lr=0.00008
-    )
+    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+    #     optimizer, mode="min", factor=0.4, patience=1, verbose=True
+    # )
 
     # initialize tracker for minimum validation loss
     valid_loss_min = np.Inf  # set initial "min" to infinity
@@ -50,7 +54,7 @@ def main():
             "with the min valid loss: " + str(valid_loss_min),
         )
 
-    for epoch in range(start_epoch, n_epochs + 1):
+    for epoch in range(start_epoch, n_epochs):
         # monitor training loss, validation loss and learning rate
         train_loss = 0.0
         valid_loss = 0.0
@@ -84,7 +88,7 @@ def main():
             loss = criterion(output, target)
             valid_loss += loss.item() * data.size(0)
 
-        scheduler.step(valid_loss)
+        # scheduler.step(valid_loss)
 
         # calculate average loss over an epoch
         train_loss = train_loss / len(train_dl.dataset)
@@ -96,7 +100,8 @@ def main():
         history.append(result)
 
         print(
-            "Epoch {:2d}: Learning Rate: {:.6f} Training Loss: {:.6f} Validation Loss:{:.6f}".format(
+            "Epoch {:2d}: LR: {:.6f} Train Loss: {:.6f} Val Loss:{:.6f}"
+            .format(
                 epoch + 1, leaning_rate[-1], train_loss, valid_loss
             )
         )
@@ -104,7 +109,8 @@ def main():
         # save model if validation loss has decreased
         if valid_loss <= valid_loss_min:
             print(
-                "Validation loss decreased({:.6f}-->{:.6f}). Saving checkpoint ..".format(
+                "Val loss decreased({:.6f}-->{:.6f}). => Saving checkpoint"
+                .format(
                     valid_loss_min, valid_loss
                 )
             )
@@ -116,10 +122,35 @@ def main():
                 "valid_loss_min": valid_loss_min,
             }
             torch.save(state, "checkpoint.pth")
+            torch.save(model.state_dict(), "model.pth")
+
+    plot_losses(history)
+    plot_lrs(history)
 
 
 def train():
     pass
+
+
+def plot_lrs(history):
+    lrs = np.concatenate([x.get('lrs', []) for x in history])
+    plt.plot(lrs)
+    plt.xlabel('Batch no.')
+    plt.ylabel('Learning rate')
+    plt.title('Learning Rate vs. Batch no.')
+    plt.savefig("plot/lr.png")
+
+
+def plot_losses(history):
+    train_losses = [x.get('train_loss') for x in history]
+    val_losses = [x['val_loss'] for x in history]
+    plt.plot(train_losses, '-bx')
+    plt.plot(val_losses, '-rx')
+    plt.xlabel('epoch')
+    plt.ylabel('loss')
+    plt.legend(['Training', 'Validation'])
+    plt.title('Loss vs. No. of epochs')
+    plt.savefig("plot/loss.png")
 
 
 if __name__ == "__main__":

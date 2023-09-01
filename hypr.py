@@ -6,8 +6,8 @@ config = {
     "data_num": 900,
     "device": torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     # you can set your own training configurations
-    "batch_size": 16,
+    "batch_size": 1,
     "learning_rate": 0.001,
-    "epoch_num": 10,
+    "epoch_num": 3,
     "resume": False,
 }
