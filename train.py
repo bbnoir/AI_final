@@ -25,7 +25,7 @@ def main():
 
     model = SuperResolution().to(device)
 
-    criterion = nn.L1Loss()
+    criterion = nn.MSELoss()
 
     n_epochs = config["epoch_num"]
     optimizer = torch.optim.Adam(
@@ -162,7 +162,7 @@ def plot_losses(history):
 
 
 def plot_psnrs(history):
-    psnrs = [x.get('psnrs') for x in history]
+    psnrs = [x.get('psnrs', []) for x in history]
     plt.figure()
     plt.plot(psnrs)
     plt.xlabel('epoch')
