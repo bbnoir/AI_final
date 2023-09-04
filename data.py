@@ -1,5 +1,6 @@
 from torch.utils.data import Dataset
 # import torchvision.transforms as T
+import torchvision.transforms.functional as FT
 import torch
 import os
 from glob import glob
@@ -8,30 +9,26 @@ import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
 from hypr import config
+import random
 
 
 def transform(HR_img, LR_img):
-    # crop_size = 128
     HR_img = np.transpose(HR_img if HR_img.shape[2] == 1 else HR_img[:, :, [
                           2, 1, 0]], (2, 0, 1))   # HWC-BGR to CHW-RGB
     LR_img = np.transpose(LR_img if LR_img.shape[2] == 1 else LR_img[:, :, [
                           2, 1, 0]], (2, 0, 1))   # HWC-BGR to CHW-RGB
     HR_img = torch.from_numpy(HR_img).float()
     LR_img = torch.from_numpy(LR_img).float()
-    # HR_tf = T.Compose(
-    #     [
-    #         T.CenterCrop(crop_size*3),
-    #         # T.RandomHorizontalFlip()
-    #     ]
-    # )
-    # LR_tf = T.Compose(
-    #     [
-    #         T.CenterCrop(crop_size),
-    #         # T.RandomHorizontalFlip()
-    #     ]
-    # )
-    # HR_img = HR_tf(HR_img)
-    # LR_img = LR_tf(LR_img)
+    # crop_size = 96
+    # i, j, h, w = T.RandomCrop.get_params(LR_img, (crop_size, crop_size))
+    # HR_img = FT.crop(HR_img, i*3, j*3, h*3, w*3)
+    # LR_img = FT.crop(LR_img, i, j, h, w)
+    if random.random() < 0.5:
+        HR_img = FT.hflip(HR_img)
+        LR_img = FT.hflip(LR_img)
+    if random.random() < 0.5:
+        HR_img = FT.vflip(HR_img)
+        LR_img = FT.vflip(LR_img)
     return HR_img, LR_img
 
 
