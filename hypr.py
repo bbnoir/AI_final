@@ -8,6 +8,6 @@ config = {
     # you can set your own training configurations
     "batch_size": 1,
     "learning_rate": 1e-3,
-    "epoch_num": 15,
+    "epoch_num": 30,
     "resume": False,
 }

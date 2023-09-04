@@ -1,24 +1,105 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+# import torch.nn.functional as F
 from thop import profile
 from torchsummary import summary
+
+
+# channel attention
+class CA(nn.Module):
+    def __init__(self, channel):
+        super(CA, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.channel_weight = nn.Sequential(
+            nn.Conv2d(channel, 1, 1),
+            nn.ReLU(True),
+            nn.Conv2d(1, channel, 1),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        y = self.avg_pool(x)
+        y = self.channel_weight(y)
+        return x * y
+
+
+class RCAB(nn.Module):
+    def __init__(self, conv, n_feat, kernel_size, bn=False, act=nn.ReLU(True)):
+        super(RCAB, self).__init__()
+        m = []
+        for i in range(2):
+            m.append(conv(n_feat, n_feat, kernel_size))
+            if bn:
+                m.append(nn.BatchNorm2d(n_feat))
+            if i == 0:
+                m.append(act)
+        m.append(CA(n_feat))
+        self.body = nn.Sequential(*m)
+
+    def forward(self, x):
+        res = self.body(x)
+        res += x
+        return res
+
+
+class ResidualGroup(nn.Module):
+    def __init__(self, conv, n_feat, kernel_size, act,
+                 n_resblocks):
+        super(ResidualGroup, self).__init__()
+        modules_body = []
+        modules_body = [
+            RCAB(conv, n_feat, kernel_size,
+                 bn=False, act=nn.ReLU(True))
+            for _ in range(n_resblocks)]
+        modules_body.append(conv(n_feat, n_feat, kernel_size))
+        self.body = nn.Sequential(*modules_body)
+
+    def forward(self, x):
+        res = self.body(x)
+        res += x
+        return res
+
+
+def conv(in_channels, out_channels, kernel_size, bias=True):
+    return nn.Conv2d(
+        in_channels, out_channels, kernel_size,
+        padding=(kernel_size//2), bias=bias)
 
 
 class SuperResolution(nn.Module):
     def __init__(self):
         super(SuperResolution, self).__init__()
-        self.conv1 = nn.Conv2d(3, 64, 3, 1, 1)
-        self.conv2 = nn.Conv2d(64, 32, 3, 1, 1)
-        self.conv3 = nn.Conv2d(32, 27, 3, 1, 1)
-        self.PS = nn.PixelShuffle(3)
+
+        n_resgroups = 2
+        n_resblocks = 4
+        n_feats = 16
+        kernel_size = 3
+        act = nn.ReLU(True)
+
+        head = [conv(3, n_feats, kernel_size)]
+
+        body = [
+            ResidualGroup(conv, n_feats, kernel_size, act=act,
+                          n_resblocks=n_resblocks)
+            for _ in range(n_resgroups)]
+
+        body.append(conv(n_feats, n_feats, kernel_size))
+
+        tail = [
+            conv(n_feats, 27, 3),
+            nn.PixelShuffle(3),
+            act
+        ]
+
+        self.head = nn.Sequential(*head)
+        self.body = nn.Sequential(*body)
+        self.tail = nn.Sequential(*tail)
 
     def forward(self, x):
-        x = F.tanh(self.conv1(x))
-        x = F.tanh(self.conv2(x))
-        x = self.conv3(x)
-        x = self.PS(x)
-        x = F.sigmoid(x)
+        x = self.head(x)
+        res = self.body(x)
+        res += x
+        x = self.tail(res)
         return x
 
 
