@@ -28,9 +28,8 @@ def main():
     n_epochs = config["epoch_num"]
     optimizer = torch.optim.Adam(
         model.parameters(), lr=config["learning_rate"])
-    # scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
     # scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-    #     optimizer, mode="min", factor=0.4, patience=1, verbose=True
+    #     optimizer, mode="min", factor=0.4, patience=1, verbose=False
     # )
 
     # initialize tracker for minimum validation loss
@@ -77,7 +76,6 @@ def main():
 
             # record loss
             train_loss += loss.item() * data.size(0)
-            # scheduler.step()
 
         # validate the model
         model.eval()
@@ -89,6 +87,7 @@ def main():
             valid_loss += loss.item() * data.size(0)
 
         # scheduler.step(valid_loss)
+        # scheduler.step()
 
         # calculate average loss over an epoch
         train_loss = train_loss / len(train_dl.dataset)
@@ -124,8 +123,8 @@ def main():
             torch.save(state, "checkpoint.pth")
             torch.save(model.state_dict(), "model.pth")
 
-    plot_losses(history)
     plot_lrs(history)
+    plot_losses(history)
 
 
 def train():
