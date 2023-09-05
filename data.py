@@ -23,12 +23,12 @@ def transform(HR_img, LR_img):
     # i, j, h, w = T.RandomCrop.get_params(LR_img, (crop_size, crop_size))
     # HR_img = FT.crop(HR_img, i*3, j*3, h*3, w*3)
     # LR_img = FT.crop(LR_img, i, j, h, w)
-    if random.random() < 0.5:
-        HR_img = FT.hflip(HR_img)
-        LR_img = FT.hflip(LR_img)
-    if random.random() < 0.5:
-        HR_img = FT.vflip(HR_img)
-        LR_img = FT.vflip(LR_img)
+    # if random.random() < 0.5:
+    #     HR_img = FT.hflip(HR_img)
+    #     LR_img = FT.hflip(LR_img)
+    # if random.random() < 0.5:
+    #     HR_img = FT.vflip(HR_img)
+    #     LR_img = FT.vflip(LR_img)
     return HR_img, LR_img
 
 
