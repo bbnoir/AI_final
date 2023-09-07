@@ -25,7 +25,7 @@ def main():
 
     model = SuperResolution().to(device)
 
-    criterion = nn.L1Loss()
+    criterion = nn.MSELoss()
 
     n_epochs = config["epoch_num"]
     optimizer = torch.optim.Adam(
@@ -98,6 +98,7 @@ def main():
         result["val_loss"] = valid_loss
         leaning_rate = lrs
         result["lrs"] = leaning_rate
+        history.append(result)
 
         print(
             "Epoch {:2d}: LR: {:.6f} Train Loss: {:.6f} Val Loss:{:.6f}"
@@ -118,20 +119,17 @@ def main():
             state = {
                 "model_state_dict": model.state_dict(),
                 "optimizer_state_dict": optimizer.state_dict(),
-                "epich": epoch,
+                "epoch": epoch,
                 "valid_loss_min": valid_loss_min,
             }
             torch.save(state, "checkpoint.pth")
             torch.save(model.state_dict(), "model.pth")
 
         psnr = demo()
-        result["psnr"] = psnr
-        history.append(result)
         print(f'Average PSNR: {psnr:.3f} dB')
 
     plot_lrs(history)
     plot_losses(history)
-    plot_psnrs(history)
 
 
 def train():
@@ -159,16 +157,6 @@ def plot_losses(history):
     plt.legend(['Training', 'Validation'])
     plt.title('Loss vs. No. of epochs')
     plt.savefig("plot/loss.png")
-
-
-def plot_psnrs(history):
-    psnrs = [x.get('psnrs') for x in history]
-    plt.figure()
-    plt.plot(psnrs)
-    plt.xlabel('epoch')
-    plt.ylabel('psnrs')
-    plt.title('PSNR vs. No. of epochs')
-    plt.savefig("plot/psnr.png")
 
 
 if __name__ == "__main__":
