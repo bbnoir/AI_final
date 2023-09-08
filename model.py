@@ -49,7 +49,7 @@ class SuperResolution(nn.Module):
     def __init__(self):
         super(SuperResolution, self).__init__()
 
-        n_resblocks = 4
+        n_resblocks = 16
         n_feats = 16
         kernel_size = 3
         act = nn.ReLU(True)
@@ -58,7 +58,6 @@ class SuperResolution(nn.Module):
 
         body = [RCAB(conv, n_feats, kernel_size, act)
                 for _ in range(n_resblocks)]
-        body.append(conv(n_feats, n_feats, kernel_size))
         self.body = nn.Sequential(*body)
 
         self.tail = nn.Sequential(
