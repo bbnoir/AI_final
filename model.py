@@ -69,7 +69,7 @@ class SuperResolution(nn.Module):
         b = F.interpolate(x, scale_factor=3, mode='bicubic')
         x = self.head(x)
         res = self.body(x)
-        res += x
+        # res += x
         x = self.tail(res)
         x += b
         return x

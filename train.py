@@ -128,8 +128,8 @@ def main():
         psnr = demo()
         print(f'Average PSNR: {psnr:.3f} dB')
 
-    plot_lrs(history)
-    plot_losses(history)
+        plot_lrs(history)
+        plot_losses(history)
 
 
 def train():
