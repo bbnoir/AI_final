@@ -8,5 +8,5 @@ config = {
     "batch_size": 1,
     "learning_rate": 1e-3,
     "epoch_num": 60,
-    "resume": True,
+    "resume": False,
 }
