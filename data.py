@@ -1,5 +1,5 @@
 from torch.utils.data import Dataset
-# import torchvision.transforms as T
+import torchvision.transforms as T
 import torchvision.transforms.functional as FT
 import torch
 import os
@@ -19,7 +19,7 @@ def transform(HR_img, LR_img):
                           2, 1, 0]], (2, 0, 1))   # HWC-BGR to CHW-RGB
     HR_img = torch.from_numpy(HR_img).float()
     LR_img = torch.from_numpy(LR_img).float()
-    # crop_size = 96
+    # crop_size = 32
     # i, j, h, w = T.RandomCrop.get_params(LR_img, (crop_size, crop_size))
     # HR_img = FT.crop(HR_img, i*3, j*3, h*3, w*3)
     # LR_img = FT.crop(LR_img, i, j, h, w)

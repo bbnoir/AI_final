@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-# import torch.nn.functional as F
+import torch.nn.functional as F
 from thop import profile
 from torchsummary import summary
 
@@ -24,17 +24,14 @@ class CA(nn.Module):
 
 
 class RCAB(nn.Module):
-    def __init__(self, conv, n_feat, kernel_size, bn=False, act=nn.ReLU(True)):
+    def __init__(self, conv, n_feat, kernel_size, act):
         super(RCAB, self).__init__()
-        m = []
-        for i in range(2):
-            m.append(conv(n_feat, n_feat, kernel_size))
-            if bn:
-                m.append(nn.BatchNorm2d(n_feat))
-            if i == 0:
-                m.append(act)
-        m.append(CA(n_feat))
-        self.body = nn.Sequential(*m)
+        self.body = nn.Sequential(
+            conv(n_feat, n_feat, kernel_size),
+            act,
+            conv(n_feat, n_feat, kernel_size),
+            CA(n_feat)
+        )
 
     def forward(self, x):
         res = self.body(x)
@@ -43,16 +40,13 @@ class RCAB(nn.Module):
 
 
 class ResidualGroup(nn.Module):
-    def __init__(self, conv, n_feat, kernel_size, act,
-                 n_resblocks):
+    def __init__(self, conv, n_feat, kernel_size, act, n_resblocks):
         super(ResidualGroup, self).__init__()
-        modules_body = []
-        modules_body = [
-            RCAB(conv, n_feat, kernel_size,
-                 bn=False, act=nn.ReLU(True))
-            for _ in range(n_resblocks)]
-        modules_body.append(conv(n_feat, n_feat, kernel_size))
-        self.body = nn.Sequential(*modules_body)
+        body = []
+        body = [RCAB(conv, n_feat, kernel_size, act)
+                for _ in range(n_resblocks)]
+        body.append(conv(n_feat, n_feat, kernel_size))
+        self.body = nn.Sequential(*body)
 
     def forward(self, x):
         res = self.body(x)
@@ -76,30 +70,28 @@ class SuperResolution(nn.Module):
         kernel_size = 3
         act = nn.ReLU(True)
 
-        head = [conv(3, n_feats, kernel_size)]
+        self.head = conv(3, n_feats, kernel_size)
 
-        body = [
-            ResidualGroup(conv, n_feats, kernel_size, act=act,
-                          n_resblocks=n_resblocks)
-            for _ in range(n_resgroups)]
+        body = []
+        for _ in range(n_resgroups):
+            body.append(
+                ResidualGroup(conv, n_feats, kernel_size, act, n_resblocks))
 
         body.append(conv(n_feats, n_feats, kernel_size))
+        self.body = nn.Sequential(*body)
 
-        tail = [
+        self.tail = nn.Sequential(
             conv(n_feats, 27, 3),
             nn.PixelShuffle(3),
-            act
-        ]
-
-        self.head = nn.Sequential(*head)
-        self.body = nn.Sequential(*body)
-        self.tail = nn.Sequential(*tail)
+        )
 
     def forward(self, x):
+        b = F.interpolate(x, scale_factor=3, mode='bicubic')
         x = self.head(x)
         res = self.body(x)
         res += x
         x = self.tail(res)
+        x += b
         return x
 
 
