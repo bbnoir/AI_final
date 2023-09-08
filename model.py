@@ -14,7 +14,7 @@ class CA(nn.Module):
             nn.Conv2d(channel, 1, 1),
             nn.ReLU(True),
             nn.Conv2d(1, channel, 1),
-            nn.Sigmoid()
+            nn.Hardsigmoid()
         )
 
     def forward(self, x):
@@ -39,21 +39,6 @@ class RCAB(nn.Module):
         return res
 
 
-class ResidualGroup(nn.Module):
-    def __init__(self, conv, n_feat, kernel_size, act, n_resblocks):
-        super(ResidualGroup, self).__init__()
-        body = []
-        body = [RCAB(conv, n_feat, kernel_size, act)
-                for _ in range(n_resblocks)]
-        body.append(conv(n_feat, n_feat, kernel_size))
-        self.body = nn.Sequential(*body)
-
-    def forward(self, x):
-        res = self.body(x)
-        res += x
-        return res
-
-
 def conv(in_channels, out_channels, kernel_size, bias=True):
     return nn.Conv2d(
         in_channels, out_channels, kernel_size,
@@ -64,20 +49,15 @@ class SuperResolution(nn.Module):
     def __init__(self):
         super(SuperResolution, self).__init__()
 
-        n_resgroups = 2
-        n_resblocks = 4
+        n_resblocks = 16
         n_feats = 16
         kernel_size = 3
         act = nn.ReLU(True)
 
         self.head = conv(3, n_feats, kernel_size)
 
-        body = []
-        for _ in range(n_resgroups):
-            body.append(
-                ResidualGroup(conv, n_feats, kernel_size, act, n_resblocks))
-
-        body.append(conv(n_feats, n_feats, kernel_size))
+        body = [RCAB(conv, n_feats, kernel_size, act)
+                for _ in range(n_resblocks)]
         self.body = nn.Sequential(*body)
 
         self.tail = nn.Sequential(
