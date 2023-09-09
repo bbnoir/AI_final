@@ -31,7 +31,7 @@ def main():
     optimizer = torch.optim.Adam(
         model.parameters(), lr=config["learning_rate"])
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", factor=0.4, patience=2, verbose=False
+        optimizer, mode="min", factor=0.4, patience=1, verbose=False
     )
 
     # initialize tracker for minimum validation loss
@@ -89,7 +89,6 @@ def main():
             valid_loss += loss.item() * data.size(0)
 
         scheduler.step(valid_loss)
-        # scheduler.step()
 
         # calculate average loss over an epoch
         train_loss = train_loss / len(train_dl.dataset)
@@ -144,6 +143,7 @@ def plot_lrs(history):
     plt.ylabel('Learning rate')
     plt.title('Learning Rate vs. Batch no.')
     plt.savefig("plot/lr.png")
+    plt.close()
 
 
 def plot_losses(history):
@@ -157,6 +157,7 @@ def plot_losses(history):
     plt.legend(['Training', 'Validation'])
     plt.title('Loss vs. No. of epochs')
     plt.savefig("plot/loss.png")
+    plt.close()
 
 
 if __name__ == "__main__":
