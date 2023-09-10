@@ -5,7 +5,30 @@ from thop import profile
 from torchsummary import summary
 
 
+class MeanShift(nn.Module):
+    def __init__(self, sub):
+        super(MeanShift, self).__init__()
+
+        sign = -1 if sub else 1
+        r = 0.4488 * sign
+        g = 0.4371 * sign
+        b = 0.4040 * sign
+
+        self.shifter = nn.Conv2d(3, 3, 1, 1, 0)
+        self.shifter.weight.data = torch.eye(3).view(3, 3, 1, 1)
+        self.shifter.bias.data = torch.Tensor([r, g, b])
+
+        # Freeze the mean shift layer
+        for params in self.shifter.parameters():
+            params.requires_grad = False
+
+    def forward(self, x):
+        x = self.shifter(x)
+        return x
+
 # channel attention
+
+
 class CA(nn.Module):
     def __init__(self, channel):
         super(CA, self).__init__()
@@ -64,11 +87,16 @@ class SuperResolution(nn.Module):
         self.body = nn.Sequential(*body)
         self.ps = nn.PixelShuffle(3)
 
+        self.sub_mean = MeanShift(True)
+        self.add_mean = MeanShift(False)
+
     def forward(self, x):
-        b = F.interpolate(x, scale_factor=3, mode='bicubic')
+        # b = F.interpolate(x, scale_factor=3, mode='bicubic')
+        x = self.sub_mean(x)
         x = self.body(x)
         x = self.ps(x)
-        x += b
+        x = self.add_mean(x)
+        # x += b
         return x
 
 
