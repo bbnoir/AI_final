@@ -49,6 +49,7 @@ def main():
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         valid_loss_min = checkpoint["valid_loss_min"]
         start_epoch = checkpoint["epoch"]
+        history = checkpoint["history"]
         print(
             "Start at epoch",
             start_epoch,
@@ -120,6 +121,7 @@ def main():
                 "optimizer_state_dict": optimizer.state_dict(),
                 "epoch": epoch,
                 "valid_loss_min": valid_loss_min,
+                "history": history,
             }
             torch.save(state, "checkpoint.pth")
             torch.save(model.state_dict(), "model.pth")
