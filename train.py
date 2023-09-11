@@ -49,6 +49,7 @@ def main():
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         valid_loss_min = checkpoint["valid_loss_min"]
         start_epoch = checkpoint["epoch"]
+        history = checkpoint["history"]
         print(
             "Start at epoch",
             start_epoch,
@@ -89,7 +90,6 @@ def main():
             valid_loss += loss.item() * data.size(0)
 
         scheduler.step(valid_loss)
-        # scheduler.step()
 
         # calculate average loss over an epoch
         train_loss = train_loss / len(train_dl.dataset)
@@ -121,6 +121,7 @@ def main():
                 "optimizer_state_dict": optimizer.state_dict(),
                 "epoch": epoch,
                 "valid_loss_min": valid_loss_min,
+                "history": history,
             }
             torch.save(state, "checkpoint.pth")
             torch.save(model.state_dict(), "model.pth")
@@ -144,6 +145,7 @@ def plot_lrs(history):
     plt.ylabel('Learning rate')
     plt.title('Learning Rate vs. Batch no.')
     plt.savefig("plot/lr.png")
+    plt.close()
 
 
 def plot_losses(history):
@@ -157,6 +159,7 @@ def plot_losses(history):
     plt.legend(['Training', 'Validation'])
     plt.title('Loss vs. No. of epochs')
     plt.savefig("plot/loss.png")
+    plt.close()
 
 
 if __name__ == "__main__":

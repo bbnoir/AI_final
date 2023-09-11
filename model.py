@@ -49,28 +49,25 @@ class SuperResolution(nn.Module):
     def __init__(self):
         super(SuperResolution, self).__init__()
 
-        n_resblocks = 16
-        n_feats = 16
+        n_feat = 18
         kernel_size = 3
         act = nn.ReLU(True)
 
-        self.head = conv(3, n_feats, kernel_size)
+        body = []
+        body.append(conv(3, n_feat, kernel_size))
 
-        body = [RCAB(conv, n_feats, kernel_size, act)
-                for _ in range(n_resblocks)]
+        for _ in range(13):
+            body.append(RCAB(conv, n_feat, kernel_size, act))
+
+        body.append(conv(n_feat, 27, 3))
+
         self.body = nn.Sequential(*body)
-
-        self.tail = nn.Sequential(
-            conv(n_feats, 27, 3),
-            nn.PixelShuffle(3),
-        )
+        self.ps = nn.PixelShuffle(3)
 
     def forward(self, x):
         b = F.interpolate(x, scale_factor=3, mode='bicubic')
-        x = self.head(x)
-        res = self.body(x)
-        # res += x
-        x = self.tail(res)
+        x = self.body(x)
+        x = self.ps(x)
         x += b
         return x
 
