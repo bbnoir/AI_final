@@ -10,17 +10,47 @@ class CA(nn.Module):
     def __init__(self, channel):
         super(CA, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        self.channel_weight = nn.Sequential(
-            nn.Conv2d(channel, 1, 1),
-            nn.ReLU(True),
-            nn.Conv2d(1, channel, 1),
-            nn.Hardsigmoid()
+        self.ca1 = nn.Sequential(
+            nn.Conv2d(channel, 1, 3, 1, 3, 3),
+            nn.ReLU(True)
+        )
+        self.ca2 = nn.Sequential(
+            nn.Conv2d(channel, 1, 3, 1, 5, 5),
+            nn.ReLU(True)
+        )
+        self.ca3 = nn.Sequential(
+            nn.Conv2d(channel, 1, 3, 1, 7, 7),
+            nn.ReLU(True)
+        )
+        self.shrink = nn.Sequential(
+            nn.Conv2d(3, channel, 3, 1, 1, 1),
+            nn.Hardsigmoid(True)
         )
 
     def forward(self, x):
         y = self.avg_pool(x)
-        y = self.channel_weight(y)
+        ca1 = self.ca1(y)
+        ca2 = self.ca2(y)
+        ca3 = self.ca3(y)
+        ca = torch.cat([ca1, ca2, ca3], dim=1)
+        y = self.shrink(ca)
         return x * y
+
+# class CA(nn.Module):
+#     def __init__(self, channel):
+#         super(CA, self).__init__()
+#         self.avg_pool = nn.AdaptiveAvgPool2d(1)
+#         self.channel_weight = nn.Sequential(
+#             nn.Conv2d(channel, 1, 1),
+#             nn.ReLU(True),
+#             nn.Conv2d(1, channel, 1),
+#             nn.Hardsigmoid()
+#         )
+#
+#     def forward(self, x):
+#         y = self.avg_pool(x)
+#         y = self.channel_weight(y)
+#         return x * y
 
 
 class RCAB(nn.Module):
@@ -56,17 +86,20 @@ class SuperResolution(nn.Module):
         body = []
         body.append(conv(3, n_feat, kernel_size))
 
-        for _ in range(17):
+        for _ in range(16):
             body.append(RCAB(conv, n_feat, kernel_size, act))
 
         body.append(conv(n_feat, 27, 3))
 
         self.body = nn.Sequential(*body)
         self.ps = nn.PixelShuffle(3)
+        # self.side = CA(27)
 
     def forward(self, x):
+        # b = torch.cat([x]*9, dim=1)
         b = F.interpolate(x, scale_factor=3, mode='bicubic')
         x = self.body(x)
+        # x += self.side(b)
         x = self.ps(x)
         x += b
         return x

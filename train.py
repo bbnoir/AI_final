@@ -31,7 +31,7 @@ def main():
     optimizer = torch.optim.Adam(
         model.parameters(), lr=config["learning_rate"])
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", factor=0.4, patience=1, verbose=False
+        optimizer, mode="min", factor=0.4, patience=2, verbose=False
     )
 
     # initialize tracker for minimum validation loss
