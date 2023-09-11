@@ -49,14 +49,14 @@ class SuperResolution(nn.Module):
     def __init__(self):
         super(SuperResolution, self).__init__()
 
-        n_feat = 16
+        n_feat = 18
         kernel_size = 3
         act = nn.ReLU(True)
 
         body = []
         body.append(conv(3, n_feat, kernel_size))
 
-        for _ in range(15):
+        for _ in range(13):
             body.append(RCAB(conv, n_feat, kernel_size, act))
 
         body.append(conv(n_feat, 27, 3))
